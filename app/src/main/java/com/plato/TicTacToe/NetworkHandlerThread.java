@@ -10,19 +10,17 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class NetworkHandlerThread extends Thread {
-    TextView serverMessageTextView;
     public Socket socket;
     public ObjectInputStream ois;
     public ObjectOutputStream oos;
     public DataInputStream dis;
     public DataOutputStream dos;
-    NetworkHandlerThread(TextView serverMessageTextView) throws IOException {
+    NetworkHandlerThread() throws IOException {
 
         socket = new Socket("10.0.2.2", 3838);
         oos = new ObjectOutputStream(socket.getOutputStream());
         ois = new ObjectInputStream(socket.getInputStream());
 
-        this.serverMessageTextView = serverMessageTextView;
     }
 
     @Override

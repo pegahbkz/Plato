@@ -1,11 +1,11 @@
 package com.plato.TicTacToe;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.os.PersistableBundle;
+import android.os.StrictMode;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,24 +17,26 @@ import java.net.Socket;
 
 public class xoGame extends AppCompatActivity {
     private NetworkHandlerThread networkHandlerThread;
-    private Socket socket;
-    private ObjectInputStream ois;
-    private ObjectOutputStream oos;
     Button[] buttons = new Button[9];
+    String typeString;
+    String opponentString;
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.xo_game);
-        final TextView textView = findViewById(R.id.text1);
-//
-//        try {
-////            socket = new Socket("10.0.2.2", 3838);
-////            ois =  new ObjectInputStream(networkHandlerThread.socket.getInputStream());
-////            oos = new ObjectOutputStream(networkHandlerThread.socket.getOutputStream());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
+        try {
+            networkHandlerThread = new NetworkHandlerThread();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //networkHandlerThread.setDaemon(true);
+        networkHandlerThread.start();
 
         buttons[0] = findViewById(R.id.button1);
         buttons[1] = findViewById(R.id.button2);
@@ -46,32 +48,207 @@ public class xoGame extends AppCompatActivity {
         buttons[7] = findViewById(R.id.button8);
         buttons[8] = findViewById(R.id.button9);
 
-        final String type = "x";
-        String turn = "x";
-        String typeAndTurn = type + "" + turn;
-        if(type==turn){
-            final boolean chose = false;
-            if(!chose){
+        TextView typeText = findViewById(R.id.type_text);
+        TextView turnText = findViewById(R.id.turn_text);
+        TextView resultText = findViewById(R.id.result_text);
+
+        try {
+            networkHandlerThread.oos.reset();
+            networkHandlerThread.oos.writeUTF("make_room");
+            networkHandlerThread.oos.flush();
+            networkHandlerThread.oos.writeUTF("casual");
+            networkHandlerThread.oos.flush();
+            networkHandlerThread.oos.writeUTF("xo");
+            networkHandlerThread.oos.flush();
+            networkHandlerThread.oos.writeInt(2);
+            networkHandlerThread.oos.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        String typeAndTurn = null;
+
+        try {
+             typeAndTurn = networkHandlerThread.ois.readUTF();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        char type = typeAndTurn.charAt(0);
+        typeString = type + "";
+        if(type=='X') opponentString = "O";
+        else opponentString = "X";
+        boolean showType = false;
+
+        if(!showType) {
+            if (type == 'X') {
+                typeText.setText("You Are X");
+                showType = true;
+            }
+            else {
+                typeText.setText("You Are O");
+                showType = true;
+            }
+        }
+        while(true) {
+
+            char turn = typeAndTurn.charAt(1);
+            if (turn == 'X') {
+                turnText.setText("It's X's Turn");
+            } else {
+                turnText.setText("It's O's Turn");
+            }
+
+            if (type == turn) {
                 for (int i = 0; i < 9; i++) {
+                    buttons[i].setEnabled(true);
                     buttons[i].setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            int id = v.getId();
-                                   Button clickedButton =  (Button) findViewById(id);
-                                   clickedButton.setText(type);
-                                   clickedButton.setEnabled(false);
-//                            try {
-//                                oos.writeUTF("hi");
-//                                oos.flush();
-//                            } catch (IOException e) {
-//                                e.printStackTrace();
-//                            }
-
+                            try {
+                                buttonClicked(v);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                         }
                     });
+
+                    String result = null;
+                    try {
+                        result = networkHandlerThread.ois.readUTF();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    if (result.startsWith(("winner")) || result.startsWith("draw")) {
+                        resultText.setText(result);
+                        break;
+                    } else {
+                        resultText.setText(result);
+                    }
+
                 }
             }
+            else{
+                String move = null;
+                try {
+                    //added to room.java
+                     move = networkHandlerThread.ois.readUTF();
+                     opponentMove(move);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                String result = null;
+                try {
+                    result = networkHandlerThread.ois.readUTF();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                if (result.startsWith(("winner")) || result.startsWith("draw")) {
+                    resultText.setText(result);
+                    break;
+                } else {
+                    resultText.setText(result);
+                }
 
+            }
+        }
+    }
+    public void buttonClicked(View v) throws IOException {
+        boolean clicked = false;
+        switch (v.getId()){
+            case R.id.button1:{
+                buttons[0].setText(typeString);
+                networkHandlerThread.oos.writeUTF("11");
+                clicked = true;
+                break;
+            }
+            case R.id.button2:{
+                buttons[1].setText(typeString);
+                networkHandlerThread.oos.writeUTF("12");
+                clicked = true;
+                break;
+            }
+            case R.id.button3:{
+                buttons[2].setText(typeString);
+                networkHandlerThread.oos.writeUTF("13");
+                clicked = true;
+                break;
+            }
+            case R.id.button4:{
+                buttons[3].setText(typeString);
+                networkHandlerThread.oos.writeUTF("21");
+                clicked = true;
+                break;
+            }
+            case R.id.button5:{
+                buttons[4].setText(typeString);
+                networkHandlerThread.oos.writeUTF("22");
+                clicked = true;
+                break;
+            }
+            case R.id.button6:{
+                buttons[5].setText(typeString);
+               networkHandlerThread.oos.writeUTF("23");
+                clicked = true;
+                break;
+            }
+            case R.id.button7:{
+                buttons[6].setText(typeString);
+                networkHandlerThread.oos.writeUTF("31");
+                clicked = true;
+                break;
+            }
+            case R.id.button8:{
+                buttons[7].setText(typeString);
+                networkHandlerThread.oos.writeUTF("32");
+                clicked = true;
+                break;
+            }
+            case R.id.button9:{
+                buttons[8].setText(typeString);
+                networkHandlerThread.oos.writeUTF("33");
+                clicked = true;
+                break;
+            }
+        }
+        if(clicked) {
+            networkHandlerThread.oos.flush();
+            for (int i = 0; i < 9; i++) {
+                buttons[i].setEnabled(false);
+            }
+        }
+    }
+
+    public void opponentMove(String move){
+        switch(move){
+            case "11":
+                buttons[0].setText(opponentString);
+                break;
+            case "12":
+                buttons[1].setText(opponentString);
+                break;
+            case "13":
+                buttons[2].setText(opponentString);
+                break;
+            case "21":
+                buttons[3].setText(opponentString);
+                break;
+            case "22":
+                buttons[4].setText(opponentString);
+                break;
+            case "23":
+                buttons[5].setText(opponentString);
+                break;
+            case "31":
+                buttons[6].setText(opponentString);
+                break;
+            case "32":
+                buttons[7].setText(opponentString);
+                break;
+            case "33":
+                buttons[8].setText(opponentString);
+                break;
         }
     }
 
