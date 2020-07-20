@@ -41,22 +41,22 @@ public class MainActivity extends AppCompatActivity {
 //        }
 
         xoButton = findViewById(R.id.xobutton);
-        final Intent intent = new Intent(MainActivity.this,xoGame.class);
+
         xoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(intent);
+                startActivity(new Intent(MainActivity.this,xoGame.class));
             }
         });
 
-        guessButton = findViewById(R.id.guessbutton);
-        final Intent intent2 = new Intent(MainActivity.this,guessGame.class);
-        guessButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(intent2);
-            }
-        });
+//        guessButton = findViewById(R.id.guessbutton);
+//        final Intent intent2 = new Intent(MainActivity.this,guessGame.class);
+//        guessButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                startActivity(intent2);
+//            }
+//        });
 
 
 
